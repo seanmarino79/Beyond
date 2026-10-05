@@ -1,4 +1,4 @@
-ABOVE & BEYOND THERAPY NOTE GENERATOR - VERSION 4
+ABOVE & BEYOND THERAPY NOTE GENERATOR - VERSION 4.2
 ========================================================
 
 WHAT THIS IS
@@ -96,3 +96,27 @@ Start Therapy Note Generator.bat - Windows launcher
 VERSION 4.1 CORRECTION
 - Corrected the cognitive skill label from “Visual Tracker” to “Visual Tracking.”
 - Existing saved sessions using the old label are automatically migrated, including toy/material and performance assignments.
+
+
+VERSION 4.2 FULL-FEATURE RESTORE
+-------------------------------
+This build restores and verifies ALL Version 4 additions together in one release:
+- Child gender/pronouns and pronoun-aware note writing.
+- Self Concept: Knows Name, Knows Age, Knows Gender.
+- Motor Activities (formerly Fine Motor), including Bilateral Play, Block Stacking and Design, Imitation of Strokes, Pincer Grasp, Puzzles, Reaching, Supported Sitting, Supported Standing, and Tummy Time.
+- Receptive Communication & Cognitive Skills includes Visual Tracking (correct wording).
+- Language includes Auditory Response.
+- Co-treating-with field.
+- Specific preposition and WH-question targets.
+- Toy/material assignment for each selected skill.
+- Performance selector appears after a toy/material is entered: Succeeded, Needed Support, or Struggled.
+- Multiple narrative versions via Recreate Note.
+- Therapist and parent stylus/mouse/touch signatures.
+- Print/PDF/Word/email-share output.
+- Local roster/session saving plus backup export/import.
+
+IMPORTANT GITHUB DEPLOYMENT IMPROVEMENT
+--------------------------------------
+Version 4.2's index.html is SELF-CONTAINED: the CSS and JavaScript are embedded inside it. This prevents a new index.html from accidentally loading an older app.js or styles.css from GitHub/browser cache.
+For GitHub Pages, you may replace/upload index.html by itself and the complete Version 4.2 app will run. The separate app.js and styles.css are included only as readable source/reference copies.
+You should see "Version 4.2" in the top header after the new build is live.
