@@ -1,7 +1,8 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v3';
+  const STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v4';
+  const LEGACY_V3_STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v3';
   const LEGACY_V2_STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v2';
   const LEGACY_STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v1';
   const VARIANT_COUNT = 6;
@@ -12,6 +13,7 @@
   let toastTimer = null;
   let noteVariantIndex = 0;
   let skillToyAssignments = {};
+  let skillPerformanceAssignments = {};
   let signatureStrokes = { therapist: [], parent: [] };
   const activeSignaturePointers = new Map();
 
@@ -20,7 +22,8 @@
     engagement: ['Active', 'Engaged', 'Not Engaged', 'Self-Directed'],
     toy: ['Engaged', 'Kicking', 'Quick Changing', 'Scattering', 'Throwing'],
     socialInteraction: ['Joint Eye Contact', 'Reciprocal Play', 'Social Smiles'],
-    fineMotor: ['Bilateral Play', 'Block Stacking and Design', 'Imitation of Strokes', 'Pincer Grasp', 'Puzzles'],
+    selfConcept: ['Knows Age', 'Knows Gender', 'Knows Name'],
+    fineMotor: ['Bilateral Play', 'Block Stacking and Design', 'Imitation of Strokes', 'Pincer Grasp', 'Puzzles', 'Reaching', 'Supported Sitting', 'Supported Standing', 'Tummy Time'],
     receptive: [
       'Cause and Effect',
       'Following One-Step Directions',
@@ -34,11 +37,11 @@
       'Problem Solving Activities',
       'Size Concepts',
       'Understanding Prepositions',
+      'Visual Tracking',
       'WH Questions'
     ],
     socialSkills: [
-      'Answering Self-Concept Skills',
-      'Imitating Actions',
+            'Imitating Actions',
       'Imitating Sounds',
       'Increasing Attention',
       'Make-Believe Play',
@@ -47,7 +50,7 @@
       'Structured Tasks',
       'Turn Taking'
     ],
-    expressive: ['Give Choices', 'Imitation', 'Labeling', 'Modeling', 'Use of Pictures', 'Use of Signs'],
+    expressive: ['Auditory Response', 'Give Choices', 'Imitation', 'Labeling', 'Modeling', 'Use of Pictures', 'Use of Signs'],
     prepositions: [
       'Above', 'Around', 'Behind', 'Below', 'Beside / Next To', 'Between', 'Down', 'In', 'In Front Of',
       'Inside', 'Near', 'Off', 'On', 'Out Of', 'Outside', 'Over', 'Through', 'Under', 'Up'
@@ -55,20 +58,24 @@
     whQuestions: ['How', 'What', 'When', 'Where', 'Which', 'Who', 'Why']
   };
 
-  const toyAssignableGroups = ['socialInteraction', 'handOverHand', 'fineMotor', 'receptive', 'socialSkills', 'expressive'];
+  const toyAssignableGroups = ['socialInteraction', 'selfConcept', 'handOverHand', 'fineMotor', 'receptive', 'socialSkills', 'expressive'];
   const skillGroupLabels = {
     socialInteraction: 'Social Interaction',
+    selfConcept: 'Self Concept',
     handOverHand: 'Hand-Over-Hand Assistance',
-    fineMotor: 'Fine Motor',
+    fineMotor: 'Motor',
     receptive: 'Receptive / Cognitive',
     socialSkills: 'Social Skills',
-    expressive: 'Expressive Language'
+    expressive: 'Language'
   };
 
   const phraseMap = {
     'Joint Eye Contact': 'joint eye contact',
     'Reciprocal Play': 'reciprocal play',
     'Social Smiles': 'social smiles',
+    'Knows Age': 'identifying own age',
+    'Knows Gender': 'identifying own gender',
+    'Knows Name': 'identifying own name',
     'Identification of Items': 'identification of items',
     'Manipulation of Tactile Objects': 'manipulation of tactile objects',
     'Bilateral Play': 'bilateral play',
@@ -76,6 +83,10 @@
     'Imitation of Strokes': 'imitation of strokes',
     'Pincer Grasp': 'pincer grasp',
     'Puzzles': 'puzzle completion',
+    'Reaching': 'reaching',
+    'Supported Sitting': 'supported sitting',
+    'Supported Standing': 'supported standing',
+    'Tummy Time': 'tummy time',
     'Cause and Effect': 'cause-and-effect skills',
     'Following One-Step Directions': 'following one-step directions',
     'Following Two-Step Directions': 'following two-step directions',
@@ -88,6 +99,7 @@
     'Problem Solving Activities': 'problem-solving activities',
     'Size Concepts': 'size concepts',
     'Understanding Prepositions': 'understanding prepositions',
+    'Visual Tracking': 'visual tracking',
     'WH Questions': 'WH questions',
     'Answering Self-Concept Skills': 'answering self-concept questions',
     'Imitating Actions': 'imitating actions',
@@ -98,6 +110,7 @@
     'Sensory Play': 'sensory play',
     'Structured Tasks': 'structured tasks',
     'Turn Taking': 'turn taking',
+    'Auditory Response': 'auditory response',
     'Give Choices': 'providing choices',
     'Imitation': 'imitation',
     'Labeling': 'labeling',
@@ -129,10 +142,10 @@
   function init() {
     Object.assign(els, {
       childList: byId('childList'), childSearch: byId('childSearch'), sessionHistory: byId('sessionHistory'),
-      childName: byId('childName'), dateOfService: byId('dateOfService'), timeIn: byId('timeIn'), timeOut: byId('timeOut'),
+      childName: byId('childName'), childGender: byId('childGender'), dateOfService: byId('dateOfService'), timeIn: byId('timeIn'), timeOut: byId('timeOut'),
       nextAppointment: byId('nextAppointment'), location: byId('location'), whoPresent: byId('whoPresent'), therapistName: byId('therapistName'),
       narrative: byId('narrative'), clinicianNotes: byId('clinicianNotes'), generatedNote: byId('generatedNote'),
-      saveStatus: byId('saveStatus'), toast: byId('toast'), childDialog: byId('childDialog'), newChildName: byId('newChildName'),
+      saveStatus: byId('saveStatus'), toast: byId('toast'), childDialog: byId('childDialog'), newChildName: byId('newChildName'), newChildGender: byId('newChildGender'),
       toyAssignmentList: byId('toyAssignmentList'), bulkToyInput: byId('bulkToyInput'), variantLabel: byId('variantLabel'),
       coTreatWith: byId('coTreatWith'), otherPrepositions: byId('otherPrepositions'), otherWhQuestions: byId('otherWhQuestions')
     });
@@ -141,6 +154,7 @@
     renderGroup('engagementOptions', 'engagement', groups.engagement);
     renderGroup('toyOptions', 'toy', groups.toy);
     renderGroup('socialInteractionOptions', 'socialInteraction', groups.socialInteraction);
+    renderGroup('selfConceptOptions', 'selfConcept', groups.selfConcept);
     renderGroup('fineMotorOptions', 'fineMotor', groups.fineMotor);
     renderGroup('receptiveOptions', 'receptive', groups.receptive);
     renderGroup('socialSkillsOptions', 'socialSkills', groups.socialSkills);
@@ -167,6 +181,7 @@
   function bindEvents() {
     byId('addChildBtn').addEventListener('click', () => {
       els.newChildName.value = '';
+      if (els.newChildGender) els.newChildGender.value = '';
       els.childDialog.showModal();
       setTimeout(() => els.newChildName.focus(), 30);
     });
@@ -182,7 +197,7 @@
         toast('That child already exists. Selected the existing record.');
         return;
       }
-      const child = { id: uid('c'), name, createdAt: new Date().toISOString() };
+      const child = { id: uid('c'), name, gender: els.newChildGender?.value || '', createdAt: new Date().toISOString() };
       state.clients.push(child);
       persist();
       renderChildren();
@@ -210,7 +225,7 @@
     byId('clearTherapistSignatureBtn').addEventListener('click', () => clearSignature('therapist'));
     byId('clearParentSignatureBtn').addEventListener('click', () => clearSignature('parent'));
 
-    document.querySelectorAll('input, textarea').forEach(el => {
+    document.querySelectorAll('input, textarea, select').forEach(el => {
       el.addEventListener('input', () => {
         markDirty();
         updateGeneratedAndPreview();
@@ -251,7 +266,7 @@
     }
     els.childList.innerHTML = clients.map(c => `
       <div class="child-item ${c.id === selectedChildId ? 'active' : ''}" data-child-id="${c.id}">
-        <button type="button" class="select-child">${escapeHtml(c.name)}</button>
+        <button type="button" class="select-child"><span>${escapeHtml(c.name)}</span>${c.gender ? `<span class="child-gender">${escapeHtml(c.gender)}</span>` : ''}</button>
         <button type="button" class="delete-child" title="Delete child">Delete</button>
       </div>`).join('');
 
@@ -274,7 +289,10 @@
     renderHistory();
     if (reset) resetForm(true);
     const child = state.clients.find(c => c.id === id);
-    if (child) els.childName.value = child.name;
+    if (child) {
+      els.childName.value = child.name;
+      if (els.childGender) els.childGender.value = child.gender || '';
+    }
     updateGeneratedAndPreview();
   }
 
@@ -324,6 +342,7 @@
     editingSessionId = null;
     noteVariantIndex = 0;
     skillToyAssignments = {};
+    skillPerformanceAssignments = {};
     signatureStrokes = { therapist: [], parent: [] };
     const child = keepChild && selectedChildId ? state.clients.find(c => c.id === selectedChildId) : null;
     document.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
@@ -334,6 +353,7 @@
     });
     els.dateOfService.value = todayISO();
     els.childName.value = child ? child.name : '';
+    if (els.childGender) els.childGender.value = child?.gender || '';
     els.therapistName.value = state.settings?.therapistName || els.therapistName.value || '';
     els.saveStatus.textContent = 'Not saved';
     renderToyAssignments();
@@ -357,12 +377,14 @@
     if (!child || child.name.toLowerCase() !== data.childName.trim().toLowerCase()) {
       child = state.clients.find(c => c.name.toLowerCase() === data.childName.trim().toLowerCase());
       if (!child) {
-        child = { id: uid('c'), name: data.childName.trim(), createdAt: new Date().toISOString() };
+        child = { id: uid('c'), name: data.childName.trim(), gender: data.childGender || '', createdAt: new Date().toISOString() };
         state.clients.push(child);
       }
       selectedChildId = child.id;
       state.lastSelectedChildId = child.id;
     }
+    child.name = data.childName.trim();
+    child.gender = data.childGender || child.gender || '';
 
     const record = {
       ...data,
@@ -412,6 +434,7 @@
     const selectedSetting = document.querySelector('input[name="sessionSetting"]:checked');
     return {
       childName: els.childName.value,
+      childGender: els.childGender?.value || '',
       dateOfService: els.dateOfService.value,
       timeIn: els.timeIn.value,
       timeOut: els.timeOut.value,
@@ -431,6 +454,7 @@
       engagement: checkedGroup('engagement'),
       toy: checkedGroup('toy'),
       socialInteraction: checkedGroup('socialInteraction'),
+      selfConcept: checkedGroup('selfConcept'),
       fineMotor: checkedGroup('fineMotor'),
       receptive: checkedGroup('receptive'),
       prepositions: checkedGroup('prepositions'),
@@ -440,6 +464,7 @@
       socialSkills: checkedGroup('socialSkills'),
       expressive: checkedGroup('expressive'),
       skillToys: { ...skillToyAssignments },
+      skillPerformance: { ...skillPerformanceAssignments },
       narrative: els.narrative.value.trim(),
       clinicianNotes: els.clinicianNotes.value.trim(),
       noteVariant: noteVariantIndex,
@@ -448,7 +473,9 @@
   }
 
   function applyFormData(s) {
-    els.childName.value = s.childName || state.clients.find(c => c.id === s.childId)?.name || '';
+    const childProfile = state.clients.find(c => c.id === s.childId);
+    els.childName.value = s.childName || childProfile?.name || '';
+    if (els.childGender) els.childGender.value = s.childGender || childProfile?.gender || '';
     els.dateOfService.value = s.dateOfService || '';
     els.timeIn.value = s.timeIn || '';
     els.timeOut.value = s.timeOut || '';
@@ -463,7 +490,7 @@
     if (els.coTreatWith) els.coTreatWith.value = s.coTreatWith || '';
     setCheckedField('handOverHandUsed', !!s.handOverHandUsed);
     document.querySelectorAll('input[name="sessionSetting"]').forEach(i => i.checked = i.value === (s.sessionSetting || ''));
-    ['handOverHand','temperament','engagement','toy','socialInteraction','fineMotor','receptive','socialSkills','expressive','prepositions','whQuestions'].forEach(g => setCheckedGroup(g, s[g] || []));
+    ['handOverHand','temperament','engagement','toy','socialInteraction','selfConcept','fineMotor','receptive','socialSkills','expressive','prepositions','whQuestions'].forEach(g => setCheckedGroup(g, s[g] || []));
     if (els.otherPrepositions) els.otherPrepositions.value = s.otherPrepositions || '';
     if (els.otherWhQuestions) els.otherWhQuestions.value = s.otherWhQuestions || '';
     updateConditionalDetails();
@@ -471,6 +498,7 @@
     els.clinicianNotes.value = s.clinicianNotes || '';
     noteVariantIndex = Number.isInteger(s.noteVariant) ? s.noteVariant % VARIANT_COUNT : 0;
     skillToyAssignments = { ...(s.skillToys || {}) };
+    skillPerformanceAssignments = { ...(s.skillPerformance || {}) };
     signatureStrokes = normalizeSignatures(s.signatures);
     renderToyAssignments();
   }
@@ -488,6 +516,8 @@
     els.toyAssignmentList.innerHTML = selected.map(({ group, skill }) => {
       const key = toyKey(group, skill);
       const value = skillToyAssignments[key] || '';
+      const performance = skillPerformanceAssignments[key] || '';
+      const performanceClass = value.trim() ? '' : ' hidden-performance';
       return `
         <div class="toy-assignment-row">
           <div class="toy-skill-label">
@@ -495,12 +525,36 @@
             <strong>${escapeHtml(skill)}</strong>
           </div>
           <input class="text-input toy-material-input" type="text" data-toy-key="${escapeHtml(key)}" value="${escapeHtml(value)}" placeholder="Toy / material used (optional)" />
+          <select class="text-input toy-performance-input${performanceClass}" data-performance-key="${escapeHtml(key)}" aria-label="How the child did with ${escapeHtml(skill)}">
+            <option value="">How did they do?</option>
+            <option value="Succeeded"${performance === 'Succeeded' ? ' selected' : ''}>Succeeded</option>
+            <option value="Needed Support"${performance === 'Needed Support' ? ' selected' : ''}>Needed Support</option>
+            <option value="Struggled"${performance === 'Struggled' ? ' selected' : ''}>Struggled</option>
+          </select>
         </div>`;
     }).join('');
 
     els.toyAssignmentList.querySelectorAll('[data-toy-key]').forEach(input => {
       input.addEventListener('input', () => {
-        skillToyAssignments[input.dataset.toyKey] = input.value;
+        const key = input.dataset.toyKey;
+        skillToyAssignments[key] = input.value;
+        const performanceSelect = els.toyAssignmentList.querySelector(`[data-performance-key="${cssEscape(key)}"]`);
+        const hasToy = !!input.value.trim();
+        if (performanceSelect) {
+          performanceSelect.classList.toggle('hidden-performance', !hasToy);
+          if (!hasToy) {
+            performanceSelect.value = '';
+            skillPerformanceAssignments[key] = '';
+          }
+        }
+        markDirty();
+        updateGeneratedAndPreview();
+      });
+    });
+
+    els.toyAssignmentList.querySelectorAll('[data-performance-key]').forEach(select => {
+      select.addEventListener('change', () => {
+        skillPerformanceAssignments[select.dataset.performanceKey] = select.value;
         markDirty();
         updateGeneratedAndPreview();
       });
@@ -519,6 +573,9 @@
     document.querySelectorAll('[data-toy-key]').forEach(input => {
       skillToyAssignments[input.dataset.toyKey] = input.value;
     });
+    document.querySelectorAll('[data-performance-key]').forEach(select => {
+      skillPerformanceAssignments[select.dataset.performanceKey] = select.value;
+    });
   }
 
   function applyToyToAllSelected() {
@@ -533,6 +590,11 @@
     markDirty();
     updateGeneratedAndPreview();
     toast('Toy/material applied to all selected skills.');
+  }
+
+  function cssEscape(value) {
+    if (window.CSS && typeof window.CSS.escape === 'function') return window.CSS.escape(value);
+    return String(value).replace(/(["\\])/g, '\\$1');
   }
 
   function toyKey(group, skill) {
@@ -557,6 +619,7 @@
   function buildGeneratedNote(data, variant = 0) {
     const v = Math.abs(Number(variant) || 0) % VARIANT_COUNT;
     const sentences = [];
+    const pronouns = getPronouns(data);
 
     const sessionType = data.sessionIndividual ? 'individual therapy session' : 'therapy session';
     const setting = describeSetting(data);
@@ -597,7 +660,7 @@
     const categorySentences = buildCategorySentences(data, v);
     sentences.push(...categorySentences);
 
-    if (data.handOverHandUsed || data.handOverHand.length) {
+    if (data.handOverHandUsed || (data.handOverHand || []).length) {
       const items = data.handOverHand || [];
       const desc = items.length ? describeSkillsWithToys('handOverHand', items, data, v) : '';
       const hohTemplates = [
@@ -606,26 +669,27 @@
         desc ? `Hand-over-hand support was incorporated for ${desc}.` : 'Hand-over-hand support was incorporated when needed.',
         desc ? `Physical guidance through hand-over-hand assistance supported ${desc}.` : 'Physical guidance through hand-over-hand assistance was provided when needed.',
         desc ? `Hand-over-hand prompting was used while working on ${desc}.` : 'Hand-over-hand prompting was used as appropriate.',
-        desc ? `The child received hand-over-hand support for ${desc}.` : 'The child received hand-over-hand support as needed.'
+        desc ? `${pronouns.subjectCap} received hand-over-hand support for ${desc}.` : `${pronouns.subjectCap} received hand-over-hand support as needed.`
       ];
       sentences.push(hohTemplates[v]);
     }
 
-    const clinician = buildClinicianNoteSentence(data.clinicianNotes, v);
+    const clinician = buildClinicianNoteSentence(data.clinicianNotes, v, data);
     if (clinician) sentences.push(clinician);
 
     const skillAreas = [];
-    if (data.socialInteraction.length) skillAreas.push('social interaction');
-    if (data.fineMotor.length) skillAreas.push('fine motor skills');
-    if (data.receptive.length) skillAreas.push('receptive communication and cognitive skills');
-    if (data.socialSkills.length) skillAreas.push('social skills');
-    if (data.expressive.length) skillAreas.push('expressive language');
+    if ((data.socialInteraction || []).length) skillAreas.push('social interaction');
+    if ((data.selfConcept || []).length) skillAreas.push('self-concept skills');
+    if ((data.fineMotor || []).length) skillAreas.push('motor skills');
+    if ((data.receptive || []).length) skillAreas.push('receptive communication and cognitive skills');
+    if ((data.socialSkills || []).length) skillAreas.push('social skills');
+    if ((data.expressive || []).length) skillAreas.push('language skills');
     if (skillAreas.length) {
       const practiceTemplates = [
         `Continued opportunities to practice ${joinHuman(skillAreas)} are recommended during familiar routines and play activities.`,
         `Home and daily routines can continue to provide practice opportunities for ${joinHuman(skillAreas)}.`,
         `Ongoing practice of ${joinHuman(skillAreas)} is encouraged across familiar play and everyday routines.`,
-        `Caregivers can continue supporting ${joinHuman(skillAreas)} through naturally occurring routines and play.`,
+        `Caregivers can continue supporting ${pronouns.object} with ${joinHuman(skillAreas)} through naturally occurring routines and play.`,
         `The skills addressed today can continue to be practiced during familiar routines, with emphasis on ${joinHuman(skillAreas)}.`,
         `Continued carryover of ${joinHuman(skillAreas)} is encouraged during everyday activities and play.`
       ];
@@ -633,6 +697,21 @@
     }
 
     return sentences.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function formatGender(value) {
+    const gender = String(value || '').trim();
+    if (gender === 'They/Them') return 'They/them';
+    if (gender === 'Not Specified') return 'Not specified';
+    return gender;
+  }
+
+  function getPronouns(data = {}) {
+    const gender = String(data.childGender || '').trim().toLowerCase();
+    if (gender === 'male') return { subject: 'he', subjectCap: 'He', object: 'him', possessive: 'his', be: 'was' };
+    if (gender === 'female') return { subject: 'she', subjectCap: 'She', object: 'her', possessive: 'her', be: 'was' };
+    if (gender === 'they/them') return { subject: 'they', subjectCap: 'They', object: 'them', possessive: 'their', be: 'were' };
+    return { subject: 'the child', subjectCap: 'The child', object: 'the child', possessive: "the child's", be: 'was' };
   }
 
   function describeSetting(data) {
@@ -644,6 +723,7 @@
   }
 
   function buildPresentationSentence(data, variant) {
+    const pronouns = getPronouns(data);
     const temperament = (data.temperament || []).map(v => String(v).toLowerCase());
     const engagement = (data.engagement || []).map(v => engagementMap[v] || String(v).toLowerCase());
     const behaviors = (data.toy || []).map(v => behaviorMap[v] || String(v).toLowerCase());
@@ -654,12 +734,12 @@
       const tempText = temperament.length ? joinHuman(temperament) : '';
       const engageText = engagement.length ? joinHuman(engagement) : '';
       const templates = [
-        temperament.length && engagement.length ? `The child presented as ${tempText} and was ${engageText} during activities.` : temperament.length ? `The child presented as ${tempText}.` : `The child was ${engageText} during activities.`,
-        temperament.length && engagement.length ? `Throughout the session, the child appeared ${tempText} and remained ${engageText} during activities.` : temperament.length ? `Throughout the session, the child appeared ${tempText}.` : `Throughout the session, the child was ${engageText} during activities.`,
-        temperament.length && engagement.length ? `The child's presentation reflected a ${tempText} temperament with ${engageText} participation.` : temperament.length ? `The child's presentation reflected a ${tempText} temperament.` : `The child's participation was ${engageText}.`,
-        temperament.length && engagement.length ? `During activities, the child appeared ${tempText} and demonstrated ${engageText} participation.` : temperament.length ? `During activities, the child appeared ${tempText}.` : `During activities, participation was ${engageText}.`,
-        temperament.length && engagement.length ? `Across the visit, the child was ${tempText} and ${engageText} during therapeutic activities.` : temperament.length ? `Across the visit, the child was ${tempText}.` : `Across the visit, the child was ${engageText} during therapeutic activities.`,
-        temperament.length && engagement.length ? `The child demonstrated a ${tempText} temperament and ${engageText} participation.` : temperament.length ? `The child demonstrated a ${tempText} temperament.` : `The child demonstrated ${engageText} participation.`
+        temperament.length && engagement.length ? `${pronouns.subjectCap} presented as ${tempText} and ${pronouns.be} ${engageText} during activities.` : temperament.length ? `${pronouns.subjectCap} presented as ${tempText}.` : `${pronouns.subjectCap} ${pronouns.be} ${engageText} during activities.`,
+        temperament.length && engagement.length ? `Throughout the session, ${pronouns.subject} appeared ${tempText} and remained ${engageText} during activities.` : temperament.length ? `Throughout the session, ${pronouns.subject} appeared ${tempText}.` : `Throughout the session, ${pronouns.subject} ${pronouns.be} ${engageText} during activities.`,
+        temperament.length && engagement.length ? `${capitalize(pronouns.possessive)} presentation reflected a ${tempText} temperament with ${engageText} participation.` : temperament.length ? `${capitalize(pronouns.possessive)} presentation reflected a ${tempText} temperament.` : `${capitalize(pronouns.possessive)} participation was ${engageText}.`,
+        temperament.length && engagement.length ? `During activities, ${pronouns.subject} appeared ${tempText} and demonstrated ${engageText} participation.` : temperament.length ? `During activities, ${pronouns.subject} appeared ${tempText}.` : `During activities, ${pronouns.subject} demonstrated ${engageText} participation.`,
+        temperament.length && engagement.length ? `Across the visit, ${pronouns.subject} ${pronouns.be} ${tempText} and ${engageText} during therapeutic activities.` : temperament.length ? `Across the visit, ${pronouns.subject} ${pronouns.be} ${tempText}.` : `Across the visit, ${pronouns.subject} ${pronouns.be} ${engageText} during therapeutic activities.`,
+        temperament.length && engagement.length ? `${pronouns.subjectCap} demonstrated a ${tempText} temperament and ${engageText} participation.` : temperament.length ? `${pronouns.subjectCap} demonstrated a ${tempText} temperament.` : `${pronouns.subjectCap} demonstrated ${engageText} participation.`
       ];
       sentences.push(templates[variant]);
     }
@@ -668,10 +748,10 @@
       const behaviorText = joinHuman(behaviors);
       const behaviorTemplates = [
         `Toy and play behavior included ${behaviorText}.`,
-        `During play, the child demonstrated ${behaviorText}.`,
+        `During play, ${pronouns.subject} demonstrated ${behaviorText}.`,
         `Observed toy/play behavior included ${behaviorText}.`,
         `Play-based activities were characterized by ${behaviorText}.`,
-        `During toy-based activities, the child demonstrated ${behaviorText}.`,
+        `During toy-based activities, ${pronouns.subject} demonstrated ${behaviorText}.`,
         `Toy interaction during the session included ${behaviorText}.`
       ];
       sentences.push(behaviorTemplates[variant]);
@@ -694,14 +774,25 @@
         ]
       },
       {
+        group: 'selfConcept', items: data.selfConcept,
+        starters: [
+          'Self-concept activities addressed ',
+          'Self-concept work focused on ',
+          'Self-concept skills were practiced through ',
+          'The session addressed self-concept skills including ',
+          'Self-concept development was supported through ',
+          'Self-concept goals included '
+        ]
+      },
+      {
         group: 'fineMotor', items: data.fineMotor,
         starters: [
-          'Fine motor activities targeted ',
-          'Fine motor work focused on ',
-          'Fine motor skills were addressed through ',
-          'Activities supporting fine motor development included ',
-          'Fine motor intervention emphasized ',
-          'Fine motor goals included '
+          'Motor activities targeted ',
+          'Motor work focused on ',
+          'Motor skills were addressed through ',
+          'Activities supporting motor development included ',
+          'Motor intervention emphasized ',
+          'Motor goals included '
         ]
       },
       {
@@ -729,12 +820,12 @@
       {
         group: 'expressive', items: data.expressive,
         starters: [
-          'Expressive language was facilitated through ',
-          'Expressive-language support included ',
-          'Expressive communication was encouraged through ',
-          'The session supported expressive language through ',
-          'Expressive-language intervention incorporated ',
-          'Expressive communication strategies included '
+          'Language activities addressed ',
+          'Language support included ',
+          'Communication skills were encouraged through ',
+          'The session supported language development through ',
+          'Language intervention incorporated ',
+          'Communication strategies included '
         ]
       }
     ];
@@ -748,12 +839,19 @@
   }
 
   function describeSkillsWithToys(group, items, data, variant) {
+    const pronouns = getPronouns(data);
     return joinHuman(items.map(skill => {
       const base = describeSkillDetail(group, skill, data);
-      const toy = cleanPhrase(data.skillToys?.[toyKey(group, skill)] || '');
+      const key = toyKey(group, skill);
+      const toy = cleanPhrase(data.skillToys?.[key] || '');
       if (!toy) return base;
       const connectors = ['using', 'with', 'while using', 'with the use of', 'using', 'with'];
-      return `${base} ${connectors[variant % connectors.length]} ${toy}`;
+      const activity = `${base} ${connectors[variant % connectors.length]} ${toy}`;
+      const performance = data.skillPerformance?.[key] || '';
+      if (performance === 'Succeeded') return `${activity}, during which ${pronouns.subject} demonstrated success`;
+      if (performance === 'Needed Support') return `${activity}, during which ${pronouns.subject} required support`;
+      if (performance === 'Struggled') return `${activity}, which was challenging for ${pronouns.object}`;
+      return activity;
     }));
   }
 
@@ -811,16 +909,17 @@
     }
   }
 
-  function buildClinicianNoteSentence(text, variant) {
+  function buildClinicianNoteSentence(text, variant, data = {}) {
     const raw = String(text || '').trim();
     if (!raw) return '';
+    const pronouns = getPronouns(data);
     const words = detectWordList(raw);
     if (words) {
       const starts = [
         'Words produced during the session included ',
         'Spontaneous or imitated words heard during the visit included ',
         'Verbal productions noted during the session included ',
-        'The child used or imitated words including ',
+        `${pronouns.subjectCap} used or imitated words including `,
         'Words heard during today’s activities included ',
         'Speech and language productions noted today included '
       ];
@@ -862,6 +961,7 @@
     }
 
     byId('pChildName').textContent = data.childName;
+    if (byId('pGender')) byId('pGender').textContent = formatGender(data.childGender);
     byId('pDate').textContent = formatDate(data.dateOfService);
     byId('pTime').textContent = formatTimeRange(data.timeIn, data.timeOut);
     byId('pNext').textContent = formatDateTime(data.nextAppointment);
@@ -947,10 +1047,11 @@
     try {
       const parsed = JSON.parse(await file.text());
       if (!parsed || !Array.isArray(parsed.clients) || !Array.isArray(parsed.sessions)) throw new Error('Invalid backup');
-      state.clients = parsed.clients;
-      state.sessions = parsed.sessions;
-      state.settings = parsed.settings || {};
-      state.lastSelectedChildId = parsed.lastSelectedChildId || null;
+      const normalized = normalizeState(parsed);
+      state.clients = normalized.clients;
+      state.sessions = normalized.sessions;
+      state.settings = normalized.settings;
+      state.lastSelectedChildId = normalized.lastSelectedChildId;
       selectedChildId = state.lastSelectedChildId;
       persist();
       renderChildren();
@@ -989,7 +1090,8 @@
       L(x + labelW, y - 2, x + width, y - 2, .55);
     }
 
-    field("Child's Name:", data.childName, left, 667, 240);
+    field("Child's Name:", data.childName, left, 667, 178);
+    field('Gender:', formatGender(data.childGender), 225, 667, 72);
     field('Date of Service:', formatDate(data.dateOfService), 315, 667, 252);
     field('Time In/Out:', formatTimeRange(data.timeIn, data.timeOut), left, 638, 240);
     field('Next Appointment:', formatDateTime(data.nextAppointment), 315, 638, 252);
@@ -1164,7 +1266,7 @@
       `\\paperw12240\\paperh15840\\margl900\\margr900\\margt720\\margb720\n` +
       `\\qc\\f1\\b\\fs32 ${r('Above and Beyond Pediatric Therapy:')}\\b0\\fs20\\par\n` +
       `${r("Accelerating your child's potential to new heights")}\\par\n${r('Phone 708-307-5462 Fax 708-221-7173')}\\par\n${r('aboveandbeyondtherapy@hotmail.com')}\\par\n\\pard\\ql\\f0\\fs20\\par\n` +
-      `\\b Child's Name:\\b0  ${r(data.childName)}\\tab\\tab \\b Date of Service:\\b0  ${r(formatDate(data.dateOfService))}\\par\n` +
+      `\\b Child's Name:\\b0  ${r(data.childName)}\\tab \\b Gender:\\b0  ${r(formatGender(data.childGender))}\\tab \\b Date of Service:\\b0  ${r(formatDate(data.dateOfService))}\\par\n` +
       `\\b Time In/Out:\\b0  ${r(formatTimeRange(data.timeIn, data.timeOut))}\\tab\\tab \\b Next Appointment:\\b0  ${r(formatDateTime(data.nextAppointment))}\\par\n` +
       `\\b Location:\\b0  ${r(data.location)}\\tab\\tab \\b Who was Present:\\b0  ${r(data.whoPresent)}\\par\n\\par\n` +
       `\\b Narrative:\\b0  ${r('Describe how skills were worked on in session. What you did and why')}\\par\n${r(narrative)}\\par\n\\par\n` +
@@ -1430,33 +1532,61 @@
     toastTimer = setTimeout(() => els.toast.classList.remove('show'), 2600);
   }
 
+  function normalizeState(raw) {
+    const base = raw && typeof raw === 'object' ? raw : {};
+    const clients = Array.isArray(base.clients)
+      ? base.clients.map(c => ({ ...c, gender: c.gender || '' }))
+      : [];
+    const genderById = Object.fromEntries(clients.map(c => [c.id, c.gender || '']));
+    const sessions = Array.isArray(base.sessions)
+      ? base.sessions.map(s => {
+          const receptive = (s.receptive || []).map(item => item === 'Visual Tracker' ? 'Visual Tracking' : item);
+          const skillToys = { ...(s.skillToys || {}) };
+          const skillPerformance = { ...(s.skillPerformance || {}) };
+          if (skillToys['receptive::Visual Tracker'] && !skillToys['receptive::Visual Tracking']) {
+            skillToys['receptive::Visual Tracking'] = skillToys['receptive::Visual Tracker'];
+          }
+          if (skillPerformance['receptive::Visual Tracker'] && !skillPerformance['receptive::Visual Tracking']) {
+            skillPerformance['receptive::Visual Tracking'] = skillPerformance['receptive::Visual Tracker'];
+          }
+          delete skillToys['receptive::Visual Tracker'];
+          delete skillPerformance['receptive::Visual Tracker'];
+          return ({
+          ...s,
+          childGender: s.childGender || genderById[s.childId] || '',
+          selfConcept: s.selfConcept || [],
+          fineMotor: s.fineMotor || [],
+          receptive,
+          socialSkills: s.socialSkills || [],
+          expressive: s.expressive || [],
+          coTreatWith: s.coTreatWith || '',
+          prepositions: s.prepositions || [],
+          otherPrepositions: s.otherPrepositions || '',
+          whQuestions: s.whQuestions || [],
+          otherWhQuestions: s.otherWhQuestions || '',
+          noteVariant: Number.isInteger(s.noteVariant) ? s.noteVariant : 0,
+          skillToys,
+          skillPerformance,
+          signatures: normalizeSignatures(s.signatures)
+        });
+        })
+      : [];
+    return {
+      clients,
+      sessions,
+      settings: base.settings || {},
+      lastSelectedChildId: base.lastSelectedChildId || null
+    };
+  }
+
   function loadState() {
-    try {
-      const savedV3 = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      if (savedV3 && Array.isArray(savedV3.clients) && Array.isArray(savedV3.sessions)) return savedV3;
-    } catch {}
-    try {
-      const savedV2 = JSON.parse(localStorage.getItem(LEGACY_V2_STORAGE_KEY));
-      if (savedV2 && Array.isArray(savedV2.clients) && Array.isArray(savedV2.sessions)) {
-        return {
-          clients: savedV2.clients,
-          sessions: savedV2.sessions.map(s => ({ ...s, coTreatWith: s.coTreatWith || '', prepositions: s.prepositions || [], otherPrepositions: s.otherPrepositions || '', whQuestions: s.whQuestions || [], otherWhQuestions: s.otherWhQuestions || '' })),
-          settings: savedV2.settings || {},
-          lastSelectedChildId: savedV2.lastSelectedChildId || null
-        };
-      }
-    } catch {}
-    try {
-      const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY));
-      if (legacy && Array.isArray(legacy.clients) && Array.isArray(legacy.sessions)) {
-        return {
-          clients: legacy.clients,
-          sessions: legacy.sessions.map(s => ({ ...s, noteVariant: 0, skillToys: s.skillToys || {}, signatures: normalizeSignatures(s.signatures), coTreatWith: '', prepositions: [], otherPrepositions: '', whQuestions: [], otherWhQuestions: '' })),
-          settings: legacy.settings || {},
-          lastSelectedChildId: legacy.lastSelectedChildId || null
-        };
-      }
-    } catch {}
+    const keys = [STORAGE_KEY, LEGACY_V3_STORAGE_KEY, LEGACY_V2_STORAGE_KEY, LEGACY_STORAGE_KEY];
+    for (const key of keys) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(key));
+        if (saved && Array.isArray(saved.clients) && Array.isArray(saved.sessions)) return normalizeState(saved);
+      } catch {}
+    }
     return { clients: [], sessions: [], settings: {}, lastSelectedChildId: null };
   }
 
