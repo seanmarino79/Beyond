@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Above & Beyond Therapy Note Generator</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>Above &amp; Beyond Therapy Note Generator</h1>
+      <p>Fast session documentation for a busy weekly caseload.</p>
+    </div>
+    <div class="header-actions">
+      <button id="newSessionBtn" class="btn btn-secondary">New Session</button>
+      <button id="saveSessionBtn" class="btn btn-primary">Save Session</button>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="section-title-row">
+          <h2>Children</h2>
+          <button id="addChildBtn" class="icon-btn" title="Add child">+</button>
+        </div>
+        <input id="childSearch" class="text-input" type="search" placeholder="Search children…" autocomplete="off" />
+        <div id="childList" class="child-list"></div>
+      </div>
+
+      <div class="sidebar-section compact">
+        <h2>Session History</h2>
+        <div id="sessionHistory" class="history-list empty-state">Select a child to view saved sessions.</div>
+      </div>
+
+      <div class="sidebar-section compact">
+        <h2>Data Backup</h2>
+        <button id="exportDataBtn" class="btn btn-small btn-secondary full">Export Backup</button>
+        <label class="btn btn-small btn-secondary full file-label">Import Backup
+          <input id="importDataInput" type="file" accept="application/json,.json" hidden />
+        </label>
+        <p class="privacy-note">Data stays in this browser unless you export, print, download, or share it. Use only on an approved device and use an approved secure email method for protected information.</p>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <section class="card top-card">
+        <div class="card-heading">
+          <div>
+            <h2>Session Information</h2>
+            <p>Information from the top of the original form.</p>
+          </div>
+          <div id="saveStatus" class="save-status">Not saved</div>
+        </div>
+
+        <div class="form-grid four">
+          <label>Child's Name
+            <input id="childName" class="text-input" type="text" placeholder="Select or add a child" />
+          </label>
+          <label>Date of Service
+            <input id="dateOfService" class="text-input" type="date" />
+          </label>
+          <label>Time In
+            <input id="timeIn" class="text-input" type="time" />
+          </label>
+          <label>Time Out
+            <input id="timeOut" class="text-input" type="time" />
+          </label>
+          <label>Next Appointment
+            <input id="nextAppointment" class="text-input" type="datetime-local" />
+          </label>
+          <label>Location
+            <input id="location" class="text-input" type="text" placeholder="Home, daycare, clinic…" />
+          </label>
+          <label>Who Was Present
+            <input id="whoPresent" class="text-input" type="text" placeholder="Parent, teacher, sibling…" />
+          </label>
+          <label>Therapist Name
+            <input id="therapistName" class="text-input" type="text" placeholder="Therapist name" />
+          </label>
+        </div>
+      </section>
+
+      <section class="card input-engine-card">
+        <div class="card-heading">
+          <div>
+            <h2>Clinical Input Panel</h2>
+            <p>This is the reorganized pencil-marked area. These controls do <strong>not</strong> appear on the printed note.</p>
+          </div>
+          <span class="hidden-badge">Hidden on print</span>
+        </div>
+
+        <div class="group-grid">
+          <fieldset class="check-group">
+            <legend>Session Setup</legend>
+            <label class="check-row"><input type="checkbox" data-field="sessionIndividual" /> Individual session</label>
+            <div class="subhead">Setting</div>
+            <label class="radio-row"><input type="radio" name="sessionSetting" value="Home" /> Home</label>
+            <label class="radio-row"><input type="radio" name="sessionSetting" value="Daycare" /> Daycare</label>
+            <label class="radio-row"><input type="radio" name="sessionSetting" value="Other" /> Other / location listed above</label>
+          </fieldset>
+
+          <fieldset class="check-group">
+            <legend>Interpreter / Co-Treat</legend>
+            <label class="check-row"><input type="checkbox" data-field="interpreterPresent" /> Interpreter present</label>
+            <label class="check-row"><input type="checkbox" data-field="dtBilingual" /> DT bilingual</label>
+            <label class="check-row"><input type="checkbox" data-field="coTreat" /> Co-treat</label>
+            <label id="coTreatWithWrap" class="detail-text-label hidden">Co-treating with
+              <input id="coTreatWith" class="text-input compact-input" type="text" placeholder="Name and/or discipline, e.g. Maria - OT" />
+            </label>
+          </fieldset>
+
+          <fieldset class="check-group">
+            <legend>Child's Temperament</legend>
+            <div id="temperamentOptions"></div>
+          </fieldset>
+
+          <fieldset class="check-group">
+            <legend>Engagement With Activities</legend>
+            <div id="engagementOptions"></div>
+          </fieldset>
+
+          <fieldset class="check-group">
+            <legend>Toy Choices / Behavior</legend>
+            <div id="toyOptions"></div>
+          </fieldset>
+
+          <fieldset class="check-group">
+            <legend>Social Interaction</legend>
+            <div id="socialInteractionOptions"></div>
+          </fieldset>
+
+          <fieldset class="check-group">
+            <legend>Hand-Over-Hand Assistance</legend>
+            <label class="check-row"><input type="checkbox" data-field="handOverHandUsed" /> Hand-over-hand assistance used</label>
+            <label class="check-row indent"><input type="checkbox" data-group="handOverHand" value="Identification of Items" /> Identification of items</label>
+            <label class="check-row indent"><input type="checkbox" data-group="handOverHand" value="Manipulation of Tactile Objects" /> Manipulation of tactile objects</label>
+          </fieldset>
+
+          <fieldset class="check-group wide">
+            <legend>Fine Motor Activities</legend>
+            <div id="fineMotorOptions" class="option-columns"></div>
+          </fieldset>
+
+          <fieldset class="check-group wide">
+            <legend>Receptive Communication &amp; Cognitive Skills</legend>
+            <div id="receptiveOptions" class="option-columns"></div>
+
+            <div id="prepositionDetails" class="skill-detail-panel hidden">
+              <div class="detail-heading">Prepositions worked on during this session</div>
+              <div id="prepositionOptions" class="option-columns detail-options"></div>
+              <label class="detail-text-label">Other preposition(s)
+                <input id="otherPrepositions" class="text-input compact-input" type="text" placeholder="Optional: enter another preposition" />
+              </label>
+            </div>
+
+            <div id="whQuestionDetails" class="skill-detail-panel hidden">
+              <div class="detail-heading">WH question types worked on during this session</div>
+              <div id="whQuestionOptions" class="option-columns detail-options"></div>
+              <label class="detail-text-label">Other WH question target(s)
+                <input id="otherWhQuestions" class="text-input compact-input" type="text" placeholder="Optional: e.g. what doing questions" />
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="check-group wide">
+            <legend>Social Skills</legend>
+            <div id="socialSkillsOptions" class="option-columns"></div>
+          </fieldset>
+
+          <fieldset class="check-group wide">
+            <legend>Expressive Language</legend>
+            <div id="expressiveOptions" class="option-columns"></div>
+          </fieldset>
+        </div>
+
+        <section class="toy-assignment-panel">
+          <div class="toy-assignment-heading">
+            <div>
+              <h3>Toy / Material Used With Each Selected Skill</h3>
+              <p>Only selected skills appear here. Enter the toy, game, book, puzzle, sensory item, or material used for each target.</p>
+            </div>
+          </div>
+          <div class="bulk-toy-row">
+            <input id="bulkToyInput" class="text-input" type="text" placeholder="Optional: one toy/material used for many selected skills" />
+            <button id="applyToyToAllBtn" type="button" class="btn btn-small btn-secondary">Apply to All Selected Skills</button>
+          </div>
+          <div id="toyAssignmentList" class="toy-assignment-list empty-state">Select therapy skills above to assign toys or materials.</div>
+        </section>
+
+        <div class="notes-grid">
+          <label>Additional clinician narrative (optional)
+            <textarea id="narrative" class="text-area" rows="6" placeholder="Add any important detail that is not captured by the checkboxes. This will be blended into the final Narrative section."></textarea>
+          </label>
+          <label>Words heard today / other clinician notes
+            <textarea id="clinicianNotes" class="text-area" rows="6" placeholder="Example: ball, go, more, mama — or enter another brief clinical observation."></textarea>
+          </label>
+        </div>
+      </section>
+
+      <section class="card generated-card">
+        <div class="card-heading generated-heading">
+          <div>
+            <h2>Generated Narrative</h2>
+            <p>Everything selected above is converted into the Narrative section of the printed form. The separate “Additional Comments/What to work on this week” section has been removed.</p>
+          </div>
+          <div class="generated-actions">
+            <span id="variantLabel" class="variant-label">Version 1</span>
+            <button id="regenerateBtn" class="btn btn-small btn-primary" type="button">Recreate Note</button>
+            <button id="copyNoteBtn" class="btn btn-small btn-secondary" type="button">Copy Text</button>
+          </div>
+        </div>
+        <div id="generatedNote" class="generated-note placeholder">Choose session details and therapy targets above to generate the narrative.</div>
+      </section>
+
+      <section class="card signature-card">
+        <div class="card-heading">
+          <div>
+            <h2>Signatures</h2>
+            <p>Use a mouse, touchscreen, or stylus. These signatures are saved with the session and appear on the printed/PDF document.</p>
+          </div>
+        </div>
+        <div class="signature-grid">
+          <div class="signature-capture">
+            <div class="signature-title-row">
+              <strong>Therapist Signature</strong>
+              <button id="clearTherapistSignatureBtn" type="button" class="text-button">Clear</button>
+            </div>
+            <canvas id="therapistSignaturePad" class="signature-pad" aria-label="Therapist signature pad"></canvas>
+            <div class="signature-help">Sign inside the box.</div>
+          </div>
+          <div class="signature-capture">
+            <div class="signature-title-row">
+              <strong>Parent Signature</strong>
+              <button id="clearParentSignatureBtn" type="button" class="text-button">Clear</button>
+            </div>
+            <canvas id="parentSignaturePad" class="signature-pad" aria-label="Parent signature pad"></canvas>
+            <div class="signature-help">Hand the stylus to the parent and have them sign inside the box.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card output-card">
+        <div class="card-heading">
+          <div>
+            <h2>Print / Download / Email</h2>
+            <p>Export a clean note with no checkboxes. The generated narrative and captured signatures are included.</p>
+          </div>
+        </div>
+        <div class="output-actions">
+          <button id="printBtn" class="btn btn-primary">Print / Save as PDF</button>
+          <button id="downloadPdfBtn" class="btn btn-secondary">Download PDF</button>
+          <button id="downloadWordBtn" class="btn btn-secondary">Download Word (RTF)</button>
+          <button id="shareBtn" class="btn btn-secondary">Email / Share PDF</button>
+        </div>
+        <p id="outputHint" class="output-hint">Tip: “Email / Share PDF” will attach the PDF directly when your browser/device supports file sharing. Otherwise the PDF is downloaded so you can attach it to an approved secure email.</p>
+      </section>
+
+      <section class="card preview-card">
+        <div class="card-heading">
+          <div>
+            <h2>Print Preview</h2>
+            <p>Approximation of the final printed page.</p>
+          </div>
+        </div>
+        <div class="preview-wrap">
+          <div id="printSheet" class="print-sheet">
+            <div class="print-header">
+              <h1>Above and Beyond Pediatric Therapy:</h1>
+              <div>Accelerating your child’s potential to new heights</div>
+              <div>Phone 708-307-5462 Fax 708-221-7173</div>
+              <div>aboveandbeyondtherapy@hotmail.com</div>
+            </div>
+
+            <div class="print-fields two-col">
+              <div><b>Child’s Name:</b> <span id="pChildName"></span></div>
+              <div><b>Date of Service:</b> <span id="pDate"></span></div>
+              <div><b>Time In/Out:</b> <span id="pTime"></span></div>
+              <div><b>Next Appointment:</b> <span id="pNext"></span></div>
+              <div><b>Location:</b> <span id="pLocation"></span></div>
+              <div><b>Who was Present:</b> <span id="pPresent"></span></div>
+            </div>
+
+            <div class="print-section narrative-section">
+              <div class="print-section-title">Narrative: <span>Describe how skills were worked on in session. What you did and why</span></div>
+              <div id="pNarrative" class="print-writing-area narrative-full"></div>
+            </div>
+
+            <div class="signature-row digital-signature-row">
+              <div class="print-signature-cell">
+                <b>Therapist’s Signature:</b>
+                <canvas id="pTherapistSignature" class="print-signature-canvas"></canvas>
+              </div>
+              <div class="therapist-name-cell"><b>Therapist Name:</b> <span id="pTherapist" class="name-line"></span></div>
+            </div>
+            <div class="parent-signature print-signature-cell">
+              <b>Parent’s Signature:</b>
+              <canvas id="pParentSignature" class="print-signature-canvas parent-preview-signature"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="childDialog" class="dialog">
+    <form method="dialog" id="childDialogForm">
+      <h2>Add Child</h2>
+      <label>Child's Name
+        <input id="newChildName" class="text-input" type="text" required autofocus />
+      </label>
+      <div class="dialog-actions">
+        <button value="cancel" class="btn btn-secondary">Cancel</button>
+        <button id="confirmAddChildBtn" value="default" class="btn btn-primary">Add Child</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
