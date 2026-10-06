@@ -351,7 +351,7 @@ select.text-input { appearance: auto; }
   .toy-performance-input { grid-column: auto; }
 }
 
-/* Version 4.3: temperament context, motor quantity details, and larger printed narrative */
+/* Version 4.4: expanded cognitive/motor targets plus caregiver coaching and EI strategy documentation */
 .dynamic-detail-list { margin-top: 10px; display: grid; gap: 8px; }
 .dynamic-detail-row {
   display: grid;
@@ -376,7 +376,7 @@ select.text-input { appearance: auto; }
   <header class="app-header">
     <div>
       <h1>Above &amp; Beyond Therapy Note Generator</h1>
-      <p>Fast session documentation for a busy weekly caseload. <strong>Version 4.3</strong></p>
+      <p>Fast session documentation for a busy weekly caseload. <strong>Version 4.4</strong></p>
     </div>
     <div class="header-actions">
       <button id="newSessionBtn" class="btn btn-secondary">New Session</button>
@@ -568,6 +568,23 @@ select.text-input { appearance: auto; }
             <legend>Language</legend>
             <div id="expressiveOptions" class="option-columns"></div>
           </fieldset>
+
+          <fieldset class="check-group wide">
+            <legend>Caregiver Coaching / EI Strategies</legend>
+            <div id="caregiverCoachingOptions" class="option-columns"></div>
+            <div style="margin-top:12px">
+              <label>Caregiver response
+                <select id="caregiverResponse" class="text-input">
+                  <option value="">Select if applicable</option>
+                  <option value="Verbalized understanding">Verbalized understanding</option>
+                  <option value="Demonstrated the strategy">Demonstrated the strategy</option>
+                  <option value="Demonstrated the strategy with support">Demonstrated the strategy with support</option>
+                  <option value="Asked questions / collaborated in problem solving">Asked questions / collaborated in problem solving</option>
+                  <option value="Needs additional practice">Needs additional practice</option>
+                </select>
+              </label>
+            </div>
+          </fieldset>
         </div>
 
         <section class="toy-assignment-panel">
@@ -727,7 +744,8 @@ select.text-input { appearance: auto; }
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v4_3';
+  const STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v4_4';
+  const LEGACY_V43_STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v4_3';
   const LEGACY_V4_STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v4';
   const LEGACY_V3_STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v3';
   const LEGACY_V2_STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v2';
@@ -751,7 +769,7 @@ select.text-input { appearance: auto; }
     toy: ['Engaged', 'Kicking', 'Quick Changing', 'Scattering', 'Throwing'],
     socialInteraction: ['Joint Eye Contact', 'Reciprocal Play', 'Social Smiles'],
     selfConcept: ['Knows Age', 'Knows Gender', 'Knows Name'],
-    fineMotor: ['Bilateral Play', 'Block Stacking and Design', 'Imitation of Strokes', 'Pincer Grasp', 'Puzzles', 'Reaching', 'Supported Sitting', 'Supported Standing', 'Tummy Time'],
+    fineMotor: ['Bilateral Play', 'Block Stacking and Design', 'Imitation of Strokes', 'Pincer Grasp', 'Puzzles', 'Reaching', 'Stringing Beads', 'Supported Sitting', 'Supported Standing', 'Tummy Time'],
     receptive: [
       'Cause and Effect',
       'Following One-Step Directions',
@@ -762,7 +780,9 @@ select.text-input { appearance: auto; }
       'Identification of Objects',
       'Identification of Pictures',
       'Matching and Sorting Activities',
+      'Object Permanence',
       'Problem Solving Activities',
+      'Shape Sorter',
       'Size Concepts',
       'Understanding Prepositions',
       'Visual Tracking',
@@ -779,6 +799,7 @@ select.text-input { appearance: auto; }
       'Turn Taking'
     ],
     expressive: ['Auditory Response', 'Give Choices', 'Imitation', 'Labeling', 'Modeling', 'Use of Pictures', 'Use of Signs'],
+    caregiverCoaching: ['Caregiver Education', 'Collaborative Problem Solving', 'Environmental Adaptation', 'Guided Caregiver Practice', 'Home Strategy Development', 'Modeling / Demonstration', 'Positioning Education', 'Routine Modification', 'Sensory Education', 'Visual / Written Support'],
     prepositions: [
       'Above', 'Around', 'Behind', 'Below', 'Beside / Next To', 'Between', 'Down', 'In', 'In Front Of',
       'Inside', 'Near', 'Off', 'On', 'Out Of', 'Outside', 'Over', 'Through', 'Under', 'Up'
@@ -812,6 +833,7 @@ select.text-input { appearance: auto; }
     'Pincer Grasp': 'pincer grasp',
     'Puzzles': 'puzzle completion',
     'Reaching': 'reaching',
+    'Stringing Beads': 'stringing beads',
     'Supported Sitting': 'supported sitting',
     'Supported Standing': 'supported standing',
     'Tummy Time': 'tummy time',
@@ -824,7 +846,9 @@ select.text-input { appearance: auto; }
     'Identification of Objects': 'identification of objects',
     'Identification of Pictures': 'identification of pictures',
     'Matching and Sorting Activities': 'matching and sorting activities',
+    'Object Permanence': 'object permanence',
     'Problem Solving Activities': 'problem-solving activities',
+    'Shape Sorter': 'shape-sorter activities',
     'Size Concepts': 'size concepts',
     'Understanding Prepositions': 'understanding prepositions',
     'Visual Tracking': 'visual tracking',
@@ -877,7 +901,7 @@ select.text-input { appearance: auto; }
       toyAssignmentList: byId('toyAssignmentList'), bulkToyInput: byId('bulkToyInput'), variantLabel: byId('variantLabel'),
       coTreatWith: byId('coTreatWith'), otherPrepositions: byId('otherPrepositions'), otherWhQuestions: byId('otherWhQuestions'),
       temperamentDetailPanel: byId('temperamentDetailPanel'), temperamentDetailList: byId('temperamentDetailList'),
-      blockStackCount: byId('blockStackCount'), puzzlePieceCount: byId('puzzlePieceCount')
+      blockStackCount: byId('blockStackCount'), puzzlePieceCount: byId('puzzlePieceCount'), caregiverResponse: byId('caregiverResponse')
     });
 
     renderGroup('temperamentOptions', 'temperament', groups.temperament);
@@ -889,6 +913,7 @@ select.text-input { appearance: auto; }
     renderGroup('receptiveOptions', 'receptive', groups.receptive);
     renderGroup('socialSkillsOptions', 'socialSkills', groups.socialSkills);
     renderGroup('expressiveOptions', 'expressive', groups.expressive);
+    renderGroup('caregiverCoachingOptions', 'caregiverCoaching', groups.caregiverCoaching);
     renderGroup('prepositionOptions', 'prepositions', groups.prepositions);
     renderGroup('whQuestionOptions', 'whQuestions', groups.whQuestions);
 
@@ -1080,7 +1105,7 @@ select.text-input { appearance: auto; }
     const child = keepChild && selectedChildId ? state.clients.find(c => c.id === selectedChildId) : null;
     document.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
     document.querySelectorAll('input[type="radio"]').forEach(i => i.checked = false);
-    ['timeIn','timeOut','nextAppointment','location','whoPresent','narrative','clinicianNotes','bulkToyInput','coTreatWith','otherPrepositions','otherWhQuestions','blockStackCount','puzzlePieceCount'].forEach(id => {
+    ['timeIn','timeOut','nextAppointment','location','whoPresent','narrative','clinicianNotes','bulkToyInput','coTreatWith','otherPrepositions','otherWhQuestions','blockStackCount','puzzlePieceCount','caregiverResponse'].forEach(id => {
       const el = byId(id);
       if (el) el.value = '';
     });
@@ -1203,6 +1228,8 @@ select.text-input { appearance: auto; }
       otherWhQuestions: els.otherWhQuestions?.value.trim() || '',
       socialSkills: checkedGroup('socialSkills'),
       expressive: checkedGroup('expressive'),
+      caregiverCoaching: checkedGroup('caregiverCoaching'),
+      caregiverResponse: els.caregiverResponse?.value || '',
       skillToys: { ...skillToyAssignments },
       skillPerformance: { ...skillPerformanceAssignments },
       narrative: els.narrative.value.trim(),
@@ -1230,13 +1257,14 @@ select.text-input { appearance: auto; }
     if (els.coTreatWith) els.coTreatWith.value = s.coTreatWith || '';
     setCheckedField('handOverHandUsed', !!s.handOverHandUsed);
     document.querySelectorAll('input[name="sessionSetting"]').forEach(i => i.checked = i.value === (s.sessionSetting || ''));
-    ['handOverHand','temperament','engagement','toy','socialInteraction','selfConcept','fineMotor','receptive','socialSkills','expressive','prepositions','whQuestions'].forEach(g => setCheckedGroup(g, s[g] || []));
+    ['handOverHand','temperament','engagement','toy','socialInteraction','selfConcept','fineMotor','receptive','socialSkills','expressive','caregiverCoaching','prepositions','whQuestions'].forEach(g => setCheckedGroup(g, s[g] || []));
     temperamentDetails = { ...(s.temperamentDetails || {}) };
     renderTemperamentDetails();
     if (els.blockStackCount) els.blockStackCount.value = s.motorDetails?.blockStackCount || '';
     if (els.puzzlePieceCount) els.puzzlePieceCount.value = s.motorDetails?.puzzlePieceCount || '';
     if (els.otherPrepositions) els.otherPrepositions.value = s.otherPrepositions || '';
     if (els.otherWhQuestions) els.otherWhQuestions.value = s.otherWhQuestions || '';
+    if (els.caregiverResponse) els.caregiverResponse.value = s.caregiverResponse || '';
     updateConditionalDetails();
     els.narrative.value = [s.narrative || '', s.additionalManual || ''].filter(Boolean).join(' ').trim();
     els.clinicianNotes.value = s.clinicianNotes || '';
@@ -1431,6 +1459,9 @@ select.text-input { appearance: auto; }
     const categorySentences = buildCategorySentences(data, v);
     sentences.push(...categorySentences);
 
+    const caregiverCoachingSentence = buildCaregiverCoachingSentence(data, v);
+    if (caregiverCoachingSentence) sentences.push(caregiverCoachingSentence);
+
     if (data.handOverHandUsed || (data.handOverHand || []).length) {
       const items = data.handOverHand || [];
       const desc = items.length ? describeSkillsWithToys('handOverHand', items, data, v) : '';
@@ -1455,6 +1486,7 @@ select.text-input { appearance: auto; }
     if ((data.receptive || []).length) skillAreas.push('receptive communication and cognitive skills');
     if ((data.socialSkills || []).length) skillAreas.push('social skills');
     if ((data.expressive || []).length) skillAreas.push('language skills');
+    if ((data.caregiverCoaching || []).length) skillAreas.push('caregiver-supported carryover strategies');
     if (skillAreas.length) {
       const practiceTemplates = [
         `Continued opportunities to practice ${joinHuman(skillAreas)} are recommended during familiar routines and play activities.`,
@@ -1515,7 +1547,7 @@ select.text-input { appearance: auto; }
           return `${emotion}${connector ? ` ${connector}` : ''} ${reason}`;
         });
         const templates = [
-          `During the session, ${pronouns.subject} appeared ${joinHuman(reasonPhrases)}.`,
+          `${pronouns.subjectCap} appeared ${joinHuman(reasonPhrases)} during the session.`,
           `Throughout the session, ${pronouns.subject} demonstrated ${joinHuman(reasonPhrases)}.`,
           `${capitalize(pronouns.possessive)} emotional presentation included being ${joinHuman(reasonPhrases)}.`,
           `During the visit, ${pronouns.subject} was observed to be ${joinHuman(reasonPhrases)}.`,
@@ -1570,6 +1602,34 @@ select.text-input { appearance: auto; }
     const lower = String(reason || '').trim().toLowerCase();
     if (/^(because|when|while|during|after|before|upon|following|due to|as a result of)\b/.test(lower)) return '';
     return 'when';
+  }
+
+  function buildCaregiverCoachingSentence(data, variant) {
+    const strategies = (data.caregiverCoaching || []).map(v => String(v).toLowerCase());
+    const response = cleanPhrase(data.caregiverResponse || '');
+    if (!strategies.length && !response) return '';
+
+    const strategyText = strategies.length ? joinHuman(strategies) : '';
+    const responseText = caregiverResponsePhrase(response);
+    const templates = [
+      strategies.length ? `Caregiver coaching included ${strategyText}${responseText ? `; the caregiver ${responseText}` : ''}.` : `The caregiver ${responseText}.`,
+      strategies.length ? `EI coaching strategies addressed ${strategyText}${responseText ? `, and the caregiver ${responseText}` : ''}.` : `The caregiver ${responseText}.`,
+      strategies.length ? `Caregiver support during the session focused on ${strategyText}${responseText ? `; the caregiver ${responseText}` : ''}.` : `Caregiver participation was noted, and the caregiver ${responseText}.`,
+      strategies.length ? `The therapist incorporated caregiver coaching through ${strategyText}${responseText ? `, with the caregiver ${responseText}` : ''}.` : `The caregiver ${responseText}.`,
+      strategies.length ? `Coaching and EI strategies included ${strategyText}${responseText ? `; the caregiver ${responseText}` : ''}.` : `The caregiver ${responseText}.`,
+      strategies.length ? `Caregiver-focused intervention included ${strategyText}${responseText ? `, and the caregiver ${responseText}` : ''}.` : `Caregiver response was documented as follows: the caregiver ${responseText}.`
+    ];
+    return templates[variant] || templates[0];
+  }
+
+  function caregiverResponsePhrase(value) {
+    return {
+      'Verbalized understanding': 'verbalized understanding of the strategies discussed',
+      'Demonstrated the strategy': 'demonstrated the strategy during the session',
+      'Demonstrated the strategy with support': 'demonstrated the strategy with therapist support',
+      'Asked questions / collaborated in problem solving': 'asked questions and collaborated in problem solving',
+      'Needs additional practice': 'will benefit from additional guided practice'
+    }[value] || cleanPhrase(value).toLowerCase();
   }
 
   function buildCategorySentences(data, variant) {
@@ -1676,7 +1736,7 @@ select.text-input { appearance: auto; }
     }
     if (group === 'fineMotor' && skill === 'Puzzles') {
       const count = String(data.motorDetails?.puzzlePieceCount || '').trim();
-      if (count) return `${base} using a puzzle with ${count} ${count === '1' ? 'piece' : 'pieces'}`;
+      if (count) return `${base} using a ${count}-piece puzzle`;
     }
     if (group === 'receptive' && skill === 'Understanding Prepositions') {
       const selected = [...(data.prepositions || [])].map(v => normalizeTargetLabel(v));
@@ -2414,7 +2474,7 @@ select.text-input { appearance: auto; }
   }
 
   function loadState() {
-    const keys = [STORAGE_KEY, LEGACY_V4_STORAGE_KEY, LEGACY_V3_STORAGE_KEY, LEGACY_V2_STORAGE_KEY, LEGACY_STORAGE_KEY];
+    const keys = [STORAGE_KEY, LEGACY_V43_STORAGE_KEY, LEGACY_V4_STORAGE_KEY, LEGACY_V3_STORAGE_KEY, LEGACY_V2_STORAGE_KEY, LEGACY_STORAGE_KEY];
     for (const key of keys) {
       try {
         const saved = JSON.parse(localStorage.getItem(key));
