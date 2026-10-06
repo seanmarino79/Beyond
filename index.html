@@ -143,7 +143,7 @@ label { display: grid; gap: 6px; font-size: 12px; font-weight: 700; color: #3941
 .print-section { margin-top: 18px; }
 .print-section-title { font-weight: 700; font-size: 12px; }
 .print-section-title span { font-weight: 400; }
-.print-writing-area { min-height: 270px; padding: 8px 2px; white-space: pre-wrap; font-size: 11px; line-height: 1.42; }
+.print-writing-area { min-height: 270px; padding: 8px 2px; white-space: pre-wrap; font-size: 14pt; line-height: 1.35; }
 .print-writing-area.additional { min-height: 145px; }
 .signature-row { display: grid; grid-template-columns: 1.45fr 1fr; gap: 20px; margin-top: 15px; font-size: 12px; align-items: end; }
 .sig-line, .name-line, .parent-line { display: inline-block; border-bottom: 1px solid #444; min-width: 210px; min-height: 17px; vertical-align: bottom; padding: 0 3px; }
@@ -186,7 +186,7 @@ label { display: grid; gap: 6px; font-size: 12px; font-weight: 700; color: #3941
   .app-header, .sidebar, .top-card, .input-engine-card, .generated-card, .output-card, .preview-card .card-heading { display: none !important; }
   .app-shell, .main-content, .preview-card, .preview-wrap { display: block !important; margin: 0 !important; padding: 0 !important; max-width: none !important; border: 0 !important; box-shadow: none !important; background: white !important; }
   .preview-card { margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; }
-  .print-sheet { width: 8.5in; height: 11in; min-height: 11in; margin: 0; padding: .5in .65in; box-shadow: none; overflow: hidden; }
+  .print-sheet { width: 8.5in; min-height: 11in; margin: 0; padding: .5in .65in; box-shadow: none; overflow: visible; }
 }
 
 /* V2 additions: toy-per-skill assignment, regenerating narrative, and stylus signatures */
@@ -252,9 +252,10 @@ label { display: grid; gap: 6px; font-size: 12px; font-weight: 700; color: #3941
 
 .print-writing-area.narrative-full {
   min-height: 5.15in;
-  max-height: 5.15in;
-  overflow: hidden;
   padding-top: 10px;
+  font-size: 14pt;
+  line-height: 1.35;
+  overflow: visible;
 }
 .digital-signature-row { margin-top: 4px; }
 .print-signature-cell { font-size: 12px; }
@@ -283,8 +284,9 @@ label { display: grid; gap: 6px; font-size: 12px; font-weight: 700; color: #3941
   .signature-card { display: none !important; }
   .print-writing-area.narrative-full {
     min-height: 5.15in;
-    max-height: 5.15in;
-    overflow: hidden;
+    font-size: 14pt !important;
+    line-height: 1.35;
+    overflow: visible;
   }
   .print-signature-canvas { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }
@@ -349,13 +351,32 @@ select.text-input { appearance: auto; }
   .toy-performance-input { grid-column: auto; }
 }
 
+/* Version 4.3: temperament context, motor quantity details, and larger printed narrative */
+.dynamic-detail-list { margin-top: 10px; display: grid; gap: 8px; }
+.dynamic-detail-row {
+  display: grid;
+  grid-template-columns: minmax(90px, .35fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  border-top: 1px solid #e4e8ef;
+  padding-top: 8px;
+}
+.dynamic-detail-row:first-child { border-top: 0; padding-top: 0; }
+.dynamic-detail-name { font-size: 11px; font-weight: 800; color: #344054; }
+.dynamic-detail-input { padding-top: 8px; padding-bottom: 8px; font-size: 12px; }
+.motor-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin-top: 12px; }
+.motor-detail-grid .detail-text-label { margin-top: 0; }
+@media (max-width: 760px) {
+  .dynamic-detail-row, .motor-detail-grid { grid-template-columns: 1fr; }
+}
+
   </style>
 </head>
 <body>
   <header class="app-header">
     <div>
       <h1>Above &amp; Beyond Therapy Note Generator</h1>
-      <p>Fast session documentation for a busy weekly caseload. <strong>Version 4.2</strong></p>
+      <p>Fast session documentation for a busy weekly caseload. <strong>Version 4.3</strong></p>
     </div>
     <div class="header-actions">
       <button id="newSessionBtn" class="btn btn-secondary">New Session</button>
@@ -468,6 +489,10 @@ select.text-input { appearance: auto; }
           <fieldset class="check-group">
             <legend>Child's Temperament</legend>
             <div id="temperamentOptions"></div>
+            <div id="temperamentDetailPanel" class="skill-detail-panel hidden">
+              <div class="detail-heading">What elicited each selected emotion?</div>
+              <div id="temperamentDetailList" class="dynamic-detail-list"></div>
+            </div>
           </fieldset>
 
           <fieldset class="check-group">
@@ -500,6 +525,17 @@ select.text-input { appearance: auto; }
           <fieldset class="check-group wide">
             <legend>Motor Activities</legend>
             <div id="fineMotorOptions" class="option-columns"></div>
+            <div id="motorQuantityDetails" class="skill-detail-panel hidden">
+              <div class="detail-heading">Motor activity details</div>
+              <div class="motor-detail-grid">
+                <label id="blockCountWrap" class="detail-text-label hidden">How many blocks did they stack?
+                  <input id="blockStackCount" class="text-input compact-input" type="number" min="0" step="1" inputmode="numeric" placeholder="Number of blocks" />
+                </label>
+                <label id="puzzlePieceWrap" class="detail-text-label hidden">How many pieces were in the puzzle?
+                  <input id="puzzlePieceCount" class="text-input compact-input" type="number" min="0" step="1" inputmode="numeric" placeholder="Number of pieces" />
+                </label>
+              </div>
+            </div>
           </fieldset>
 
           <fieldset class="check-group wide">
@@ -691,7 +727,8 @@ select.text-input { appearance: auto; }
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v4';
+  const STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v4_3';
+  const LEGACY_V4_STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v4';
   const LEGACY_V3_STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v3';
   const LEGACY_V2_STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v2';
   const LEGACY_STORAGE_KEY = 'aboveBeyondTherapyNoteGenerator_v1';
@@ -704,11 +741,12 @@ select.text-input { appearance: auto; }
   let noteVariantIndex = 0;
   let skillToyAssignments = {};
   let skillPerformanceAssignments = {};
+  let temperamentDetails = {};
   let signatureStrokes = { therapist: [], parent: [] };
   const activeSignaturePointers = new Map();
 
   const groups = {
-    temperament: ['Angry', 'Excited', 'Happy', 'Shy', 'Sleepy', 'Upset'],
+    temperament: ['Angry', 'Excited', 'Happy', 'Sad', 'Shy', 'Sleepy', 'Upset'],
     engagement: ['Active', 'Engaged', 'Not Engaged', 'Self-Directed'],
     toy: ['Engaged', 'Kicking', 'Quick Changing', 'Scattering', 'Throwing'],
     socialInteraction: ['Joint Eye Contact', 'Reciprocal Play', 'Social Smiles'],
@@ -837,7 +875,9 @@ select.text-input { appearance: auto; }
       narrative: byId('narrative'), clinicianNotes: byId('clinicianNotes'), generatedNote: byId('generatedNote'),
       saveStatus: byId('saveStatus'), toast: byId('toast'), childDialog: byId('childDialog'), newChildName: byId('newChildName'), newChildGender: byId('newChildGender'),
       toyAssignmentList: byId('toyAssignmentList'), bulkToyInput: byId('bulkToyInput'), variantLabel: byId('variantLabel'),
-      coTreatWith: byId('coTreatWith'), otherPrepositions: byId('otherPrepositions'), otherWhQuestions: byId('otherWhQuestions')
+      coTreatWith: byId('coTreatWith'), otherPrepositions: byId('otherPrepositions'), otherWhQuestions: byId('otherWhQuestions'),
+      temperamentDetailPanel: byId('temperamentDetailPanel'), temperamentDetailList: byId('temperamentDetailList'),
+      blockStackCount: byId('blockStackCount'), puzzlePieceCount: byId('puzzlePieceCount')
     });
 
     renderGroup('temperamentOptions', 'temperament', groups.temperament);
@@ -863,6 +903,7 @@ select.text-input { appearance: auto; }
     if (selectedChildId) selectChild(selectedChildId, false);
     else renderHistory();
     renderToyAssignments();
+    renderTemperamentDetails();
     updateConditionalDetails();
     updateGeneratedAndPreview();
     setTimeout(redrawAllSignatureCanvases, 50);
@@ -923,6 +964,7 @@ select.text-input { appearance: auto; }
       el.addEventListener('change', () => {
         markDirty();
         if (el.matches('input[type="checkbox"][data-group]')) renderToyAssignments();
+        if (el.matches('input[type="checkbox"][data-group="temperament"]')) renderTemperamentDetails();
         updateConditionalDetails(el);
         updateGeneratedAndPreview();
       });
@@ -1033,11 +1075,12 @@ select.text-input { appearance: auto; }
     noteVariantIndex = 0;
     skillToyAssignments = {};
     skillPerformanceAssignments = {};
+    temperamentDetails = {};
     signatureStrokes = { therapist: [], parent: [] };
     const child = keepChild && selectedChildId ? state.clients.find(c => c.id === selectedChildId) : null;
     document.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
     document.querySelectorAll('input[type="radio"]').forEach(i => i.checked = false);
-    ['timeIn','timeOut','nextAppointment','location','whoPresent','narrative','clinicianNotes','bulkToyInput','coTreatWith','otherPrepositions','otherWhQuestions'].forEach(id => {
+    ['timeIn','timeOut','nextAppointment','location','whoPresent','narrative','clinicianNotes','bulkToyInput','coTreatWith','otherPrepositions','otherWhQuestions','blockStackCount','puzzlePieceCount'].forEach(id => {
       const el = byId(id);
       if (el) el.value = '';
     });
@@ -1047,6 +1090,7 @@ select.text-input { appearance: auto; }
     els.therapistName.value = state.settings?.therapistName || els.therapistName.value || '';
     els.saveStatus.textContent = 'Not saved';
     renderToyAssignments();
+    renderTemperamentDetails();
     updateConditionalDetails();
     updateGeneratedAndPreview();
     setTimeout(redrawAllSignatureCanvases, 0);
@@ -1121,6 +1165,7 @@ select.text-input { appearance: auto; }
 
   function collectFormData() {
     syncSkillToyAssignmentsFromDom();
+    document.querySelectorAll('[data-temperament-detail]').forEach(input => { temperamentDetails[input.dataset.temperamentDetail] = input.value; });
     const selectedSetting = document.querySelector('input[name="sessionSetting"]:checked');
     return {
       childName: els.childName.value,
@@ -1141,11 +1186,16 @@ select.text-input { appearance: auto; }
       handOverHandUsed: checkedField('handOverHandUsed'),
       handOverHand: checkedGroup('handOverHand'),
       temperament: checkedGroup('temperament'),
+      temperamentDetails: { ...temperamentDetails },
       engagement: checkedGroup('engagement'),
       toy: checkedGroup('toy'),
       socialInteraction: checkedGroup('socialInteraction'),
       selfConcept: checkedGroup('selfConcept'),
       fineMotor: checkedGroup('fineMotor'),
+      motorDetails: {
+        blockStackCount: els.blockStackCount?.value.trim() || '',
+        puzzlePieceCount: els.puzzlePieceCount?.value.trim() || ''
+      },
       receptive: checkedGroup('receptive'),
       prepositions: checkedGroup('prepositions'),
       otherPrepositions: els.otherPrepositions?.value.trim() || '',
@@ -1181,6 +1231,10 @@ select.text-input { appearance: auto; }
     setCheckedField('handOverHandUsed', !!s.handOverHandUsed);
     document.querySelectorAll('input[name="sessionSetting"]').forEach(i => i.checked = i.value === (s.sessionSetting || ''));
     ['handOverHand','temperament','engagement','toy','socialInteraction','selfConcept','fineMotor','receptive','socialSkills','expressive','prepositions','whQuestions'].forEach(g => setCheckedGroup(g, s[g] || []));
+    temperamentDetails = { ...(s.temperamentDetails || {}) };
+    renderTemperamentDetails();
+    if (els.blockStackCount) els.blockStackCount.value = s.motorDetails?.blockStackCount || '';
+    if (els.puzzlePieceCount) els.puzzlePieceCount.value = s.motorDetails?.puzzlePieceCount || '';
     if (els.otherPrepositions) els.otherPrepositions.value = s.otherPrepositions || '';
     if (els.otherWhQuestions) els.otherWhQuestions.value = s.otherWhQuestions || '';
     updateConditionalDetails();
@@ -1191,6 +1245,33 @@ select.text-input { appearance: auto; }
     skillPerformanceAssignments = { ...(s.skillPerformance || {}) };
     signatureStrokes = normalizeSignatures(s.signatures);
     renderToyAssignments();
+  }
+
+  function renderTemperamentDetails() {
+    if (!els.temperamentDetailPanel || !els.temperamentDetailList) return;
+    const selected = checkedGroup('temperament');
+    const selectedSet = new Set(selected);
+    Object.keys(temperamentDetails).forEach(key => {
+      if (!selectedSet.has(key)) delete temperamentDetails[key];
+    });
+    if (!selected.length) {
+      els.temperamentDetailPanel.classList.add('hidden');
+      els.temperamentDetailList.innerHTML = '';
+      return;
+    }
+    els.temperamentDetailPanel.classList.remove('hidden');
+    els.temperamentDetailList.innerHTML = selected.map(emotion => `
+      <div class="dynamic-detail-row">
+        <div class="dynamic-detail-name">${escapeHtml(emotion)}</div>
+        <input class="text-input dynamic-detail-input" type="text" data-temperament-detail="${escapeHtml(emotion)}" value="${escapeHtml(temperamentDetails[emotion] || '')}" placeholder="What elicited this emotion? e.g. enjoyed bubbles, hard transition, poor sleep" />
+      </div>`).join('');
+    els.temperamentDetailList.querySelectorAll('[data-temperament-detail]').forEach(input => {
+      input.addEventListener('input', () => {
+        temperamentDetails[input.dataset.temperamentDetail] = input.value;
+        markDirty();
+        updateGeneratedAndPreview();
+      });
+    });
   }
 
   function renderToyAssignments() {
@@ -1414,24 +1495,60 @@ select.text-input { appearance: auto; }
 
   function buildPresentationSentence(data, variant) {
     const pronouns = getPronouns(data);
-    const temperament = (data.temperament || []).map(v => String(v).toLowerCase());
+    const selectedTemperaments = data.temperament || [];
     const engagement = (data.engagement || []).map(v => engagementMap[v] || String(v).toLowerCase());
     const behaviors = (data.toy || []).map(v => behaviorMap[v] || String(v).toLowerCase());
-    if (!temperament.length && !engagement.length && !behaviors.length) return '';
+    if (!selectedTemperaments.length && !engagement.length && !behaviors.length) return '';
 
     const sentences = [];
-    if (temperament.length || engagement.length) {
-      const tempText = temperament.length ? joinHuman(temperament) : '';
-      const engageText = engagement.length ? joinHuman(engagement) : '';
-      const templates = [
-        temperament.length && engagement.length ? `${pronouns.subjectCap} presented as ${tempText} and ${pronouns.be} ${engageText} during activities.` : temperament.length ? `${pronouns.subjectCap} presented as ${tempText}.` : `${pronouns.subjectCap} ${pronouns.be} ${engageText} during activities.`,
-        temperament.length && engagement.length ? `Throughout the session, ${pronouns.subject} appeared ${tempText} and remained ${engageText} during activities.` : temperament.length ? `Throughout the session, ${pronouns.subject} appeared ${tempText}.` : `Throughout the session, ${pronouns.subject} ${pronouns.be} ${engageText} during activities.`,
-        temperament.length && engagement.length ? `${capitalize(pronouns.possessive)} presentation reflected a ${tempText} temperament with ${engageText} participation.` : temperament.length ? `${capitalize(pronouns.possessive)} presentation reflected a ${tempText} temperament.` : `${capitalize(pronouns.possessive)} participation was ${engageText}.`,
-        temperament.length && engagement.length ? `During activities, ${pronouns.subject} appeared ${tempText} and demonstrated ${engageText} participation.` : temperament.length ? `During activities, ${pronouns.subject} appeared ${tempText}.` : `During activities, ${pronouns.subject} demonstrated ${engageText} participation.`,
-        temperament.length && engagement.length ? `Across the visit, ${pronouns.subject} ${pronouns.be} ${tempText} and ${engageText} during therapeutic activities.` : temperament.length ? `Across the visit, ${pronouns.subject} ${pronouns.be} ${tempText}.` : `Across the visit, ${pronouns.subject} ${pronouns.be} ${engageText} during therapeutic activities.`,
-        temperament.length && engagement.length ? `${pronouns.subjectCap} demonstrated a ${tempText} temperament and ${engageText} participation.` : temperament.length ? `${pronouns.subjectCap} demonstrated a ${tempText} temperament.` : `${pronouns.subjectCap} demonstrated ${engageText} participation.`
+    if (selectedTemperaments.length) {
+      const contextual = selectedTemperaments.map(emotion => ({
+        emotion: String(emotion).toLowerCase(),
+        reason: cleanPhrase(data.temperamentDetails?.[emotion] || '')
+      }));
+      const withReasons = contextual.filter(x => x.reason);
+      const withoutReasons = contextual.filter(x => !x.reason).map(x => x.emotion);
+
+      if (withReasons.length) {
+        const reasonPhrases = withReasons.map(({ emotion, reason }) => {
+          const connector = emotionContextConnector(reason);
+          return `${emotion}${connector ? ` ${connector}` : ''} ${reason}`;
+        });
+        const templates = [
+          `During the session, ${pronouns.subject} appeared ${joinHuman(reasonPhrases)}.`,
+          `Throughout the session, ${pronouns.subject} demonstrated ${joinHuman(reasonPhrases)}.`,
+          `${capitalize(pronouns.possessive)} emotional presentation included being ${joinHuman(reasonPhrases)}.`,
+          `During the visit, ${pronouns.subject} was observed to be ${joinHuman(reasonPhrases)}.`,
+          `Across activities, ${pronouns.subject} presented as ${joinHuman(reasonPhrases)}.`,
+          `${pronouns.subjectCap} showed varying emotions during the session, including being ${joinHuman(reasonPhrases)}.`
+        ];
+        sentences.push(templates[variant]);
+      }
+      if (withoutReasons.length) {
+        const tempText = joinHuman(withoutReasons);
+        const templates = [
+          `${pronouns.subjectCap} also presented as ${tempText}.`,
+          `${pronouns.subjectCap} also appeared ${tempText}.`,
+          `${capitalize(pronouns.possessive)} presentation also reflected ${tempText} affect.`,
+          `${pronouns.subjectCap} was also observed to be ${tempText}.`,
+          `${pronouns.subjectCap} additionally presented as ${tempText}.`,
+          `Additional emotional presentation included ${tempText}.`
+        ];
+        sentences.push(templates[variant]);
+      }
+    }
+
+    if (engagement.length) {
+      const engageText = joinHuman(engagement);
+      const engagementTemplates = [
+        `${pronouns.subjectCap} ${pronouns.be} ${engageText} during activities.`,
+        `Participation was characterized as ${engageText}.`,
+        `${capitalize(pronouns.possessive)} participation was ${engageText}.`,
+        `During activities, ${pronouns.subject} demonstrated ${engageText} participation.`,
+        `Across the visit, ${pronouns.subject} ${pronouns.be} ${engageText} during therapeutic activities.`,
+        `${pronouns.subjectCap} demonstrated ${engageText} participation.`
       ];
-      sentences.push(templates[variant]);
+      sentences.push(engagementTemplates[variant]);
     }
 
     if (behaviors.length) {
@@ -1447,6 +1564,12 @@ select.text-input { appearance: auto; }
       sentences.push(behaviorTemplates[variant]);
     }
     return sentences.join(' ');
+  }
+
+  function emotionContextConnector(reason) {
+    const lower = String(reason || '').trim().toLowerCase();
+    if (/^(because|when|while|during|after|before|upon|following|due to|as a result of)\b/.test(lower)) return '';
+    return 'when';
   }
 
   function buildCategorySentences(data, variant) {
@@ -1547,6 +1670,14 @@ select.text-input { appearance: auto; }
 
   function describeSkillDetail(group, skill, data) {
     const base = phraseMap[skill] || String(skill).toLowerCase();
+    if (group === 'fineMotor' && skill === 'Block Stacking and Design') {
+      const count = String(data.motorDetails?.blockStackCount || '').trim();
+      if (count) return `${base} by stacking ${count} ${count === '1' ? 'block' : 'blocks'}`;
+    }
+    if (group === 'fineMotor' && skill === 'Puzzles') {
+      const count = String(data.motorDetails?.puzzlePieceCount || '').trim();
+      if (count) return `${base} using a puzzle with ${count} ${count === '1' ? 'piece' : 'pieces'}`;
+    }
     if (group === 'receptive' && skill === 'Understanding Prepositions') {
       const selected = [...(data.prepositions || [])].map(v => normalizeTargetLabel(v));
       const custom = splitCustomTargets(data.otherPrepositions);
@@ -1580,6 +1711,17 @@ select.text-input { appearance: auto; }
     const coWrap = byId('coTreatWithWrap');
     if (coWrap) coWrap.classList.toggle('hidden', !coTreatChecked);
     if (!coTreatChecked && changedEl?.matches('input[data-field="coTreat"]') && els.coTreatWith) els.coTreatWith.value = '';
+
+    const motorSelected = new Set(checkedGroup('fineMotor'));
+    const showBlocks = motorSelected.has('Block Stacking and Design');
+    const showPuzzle = motorSelected.has('Puzzles');
+    byId('motorQuantityDetails')?.classList.toggle('hidden', !(showBlocks || showPuzzle));
+    byId('blockCountWrap')?.classList.toggle('hidden', !showBlocks);
+    byId('puzzlePieceWrap')?.classList.toggle('hidden', !showPuzzle);
+    if (changedEl?.matches('input[data-group="fineMotor"]')) {
+      if (!showBlocks && els.blockStackCount) els.blockStackCount.value = '';
+      if (!showPuzzle && els.puzzlePieceCount) els.puzzlePieceCount.value = '';
+    }
 
     const receptiveSelected = new Set(checkedGroup('receptive'));
     const showPrep = receptiveSelected.has('Understanding Prepositions');
@@ -1661,8 +1803,8 @@ select.text-input { appearance: auto; }
     byId('pNarrative').textContent = generated;
 
     const narrative = byId('pNarrative');
-    const len = generated.length;
-    narrative.style.fontSize = len > 3000 ? '7.5px' : len > 2200 ? '8px' : len > 1500 ? '9px' : len > 950 ? '10px' : '11px';
+    narrative.style.fontSize = '14pt';
+    narrative.style.lineHeight = '1.35';
     redrawPreviewSignatures();
   }
 
@@ -1791,11 +1933,11 @@ select.text-input { appearance: auto; }
     T('Narrative:', left, 575, 10, true);
     T('Describe how skills were worked on in session. What you did and why', 95, 575, 9.5, false);
 
-    const fontSize = narrative.length > 3000 ? 7.2 : narrative.length > 2200 ? 7.8 : narrative.length > 1500 ? 8.5 : 9.2;
+    const fontSize = 14;
     const narrativeLines = wrap(narrative, right-left, fontSize, false);
     let y = 553;
     const signatureTop = 122;
-    const lineHeight = fontSize + 3.5;
+    const lineHeight = 18.5;
     const maxNarrativeLines = Math.max(1, Math.floor((y - signatureTop) / lineHeight));
     narrativeLines.slice(0, maxNarrativeLines).forEach(line => {
       T(line, left, y, fontSize, false);
@@ -1959,7 +2101,7 @@ select.text-input { appearance: auto; }
       `\\b Child's Name:\\b0  ${r(data.childName)}\\tab \\b Gender:\\b0  ${r(formatGender(data.childGender))}\\tab \\b Date of Service:\\b0  ${r(formatDate(data.dateOfService))}\\par\n` +
       `\\b Time In/Out:\\b0  ${r(formatTimeRange(data.timeIn, data.timeOut))}\\tab\\tab \\b Next Appointment:\\b0  ${r(formatDateTime(data.nextAppointment))}\\par\n` +
       `\\b Location:\\b0  ${r(data.location)}\\tab\\tab \\b Who was Present:\\b0  ${r(data.whoPresent)}\\par\n\\par\n` +
-      `\\b Narrative:\\b0  ${r('Describe how skills were worked on in session. What you did and why')}\\par\n${r(narrative)}\\par\n\\par\n` +
+      `\\b Narrative:\\b0  ${r('Describe how skills were worked on in session. What you did and why')}\\par\n\\fs28 ${r(narrative)}\\fs20\\par\n\\par\n` +
       `\\b Therapist's Signature:\\b0\\par\n${therapistSig || r('________________________________')}\\par\n` +
       `\\b Therapist Name:\\b0  ${r(data.therapistName)}\\par\n\\par\n` +
       `\\b Parent's Signature:\\b0\\par\n${parentSig || r('____________________________________________')}\\par\n}`;
@@ -2244,6 +2386,8 @@ select.text-input { appearance: auto; }
           return ({
           ...s,
           childGender: s.childGender || genderById[s.childId] || '',
+          temperamentDetails: s.temperamentDetails || {},
+          motorDetails: s.motorDetails || {},
           selfConcept: s.selfConcept || [],
           fineMotor: s.fineMotor || [],
           receptive,
@@ -2270,7 +2414,7 @@ select.text-input { appearance: auto; }
   }
 
   function loadState() {
-    const keys = [STORAGE_KEY, LEGACY_V3_STORAGE_KEY, LEGACY_V2_STORAGE_KEY, LEGACY_STORAGE_KEY];
+    const keys = [STORAGE_KEY, LEGACY_V4_STORAGE_KEY, LEGACY_V3_STORAGE_KEY, LEGACY_V2_STORAGE_KEY, LEGACY_STORAGE_KEY];
     for (const key of keys) {
       try {
         const saved = JSON.parse(localStorage.getItem(key));
